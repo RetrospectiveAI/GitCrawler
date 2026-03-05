@@ -17,6 +17,31 @@ func NewCrawlerController(repositoryFacade *facade.RepositoryFacade) *CrawlerCon
 }
 
 func (c *CrawlerController) GetRepositoryFiles(w http.ResponseWriter, r *http.Request) {
+	var req request.GetRepositoryFilesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Url == "" {
+		http.Error(w, "Url must contain something", http.StatusBadRequest)
+		return
+	}
+	data, err := c.repositoryFacade.GetRepositoryFiles(req.Url, req.Extensions, req.Dirs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (c *CrawlerController) SaveRepositoryFile(w http.ResponseWriter, r *http.Request) {
 	var req request.RepositoryFilesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -26,7 +51,7 @@ func (c *CrawlerController) GetRepositoryFiles(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Url must contain something", http.StatusBadRequest)
 		return
 	}
-	err := c.repositoryFacade.GetRepositoryFiles(req.Url, req.Extensions, req.Dirs, req.Option)
+	err := c.repositoryFacade.SaveRepositoryFiles(req.Url, req.Extensions, req.Dirs, req.Option)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

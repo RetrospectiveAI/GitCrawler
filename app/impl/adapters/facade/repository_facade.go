@@ -25,7 +25,21 @@ func NewRepositoryFacade(cloneService contract2.CloneServiceContract, crawlerSer
 	}
 }
 
-func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, dirs []string, option enum.ConversionOption) (err error) {
+func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, dirs []string) (data *entity.RepositoryData, err error) {
+	err = c.isUrlValid(url)
+	if err != nil {
+		return nil, err
+	}
+	data, err = c.createAndCrawl(url, extensions, dirs)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+
+}
+
+func (c *RepositoryFacade) SaveRepositoryFiles(url string, extensions []string, dirs []string, option enum.ConversionOption) (err error) {
 	err = c.isUrlValid(url)
 	if err != nil {
 		return err
