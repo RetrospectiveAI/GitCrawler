@@ -46,7 +46,11 @@ func (c *CrawlerService) crawl(dir string, repositoryData *entity2.RepositoryDat
 		path := filepath.Join(dir, file.Name())
 		isDirValid := c.isDirValid(file)
 		if file.IsDir() {
-			err = c.crawl(path, repositoryData, isDirValid)
+			// Once we are inside a valid directory, keep validDir=true for all
+			// descendants. Without this, entering any sub-directory whose name is
+			// not in the allowlist would reset validDir=false and silently drop
+			// every file nested deeper (e.g. service/user/UserService.java).
+			err = c.crawl(path, repositoryData, validDir || isDirValid)
 			if err != nil {
 				return err
 			}
