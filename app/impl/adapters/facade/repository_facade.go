@@ -25,12 +25,13 @@ func NewRepositoryFacade(cloneService contract2.CloneServiceContract, crawlerSer
 	}
 }
 
-func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, dirs []string) (data *entity.RepositoryData, err error) {
+func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, dirs []string, token string) (data *entity.RepositoryData, err error) {
+	url = c.normalizeUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return nil, err
 	}
-	data, err = c.createAndCrawl(url, extensions, dirs)
+	data, err = c.createAndCrawl(url, extensions, dirs, token)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +41,12 @@ func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, d
 }
 
 func (c *RepositoryFacade) SaveRepositoryFiles(url string, extensions []string, dirs []string, option enum.ConversionOption) (err error) {
+	url = c.normalizeUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return err
 	}
-	data, err := c.createAndCrawl(url, extensions, dirs)
+	data, err := c.createAndCrawl(url, extensions, dirs, "")
 
 	converter, err := c.converterStrategy(option)
 
@@ -59,7 +61,7 @@ func (c *RepositoryFacade) SaveRepositoryFiles(url string, extensions []string, 
 	return nil
 }
 
-func (c *RepositoryFacade) GenerateBusinessResume(url string) (aiResponse string, err error) {
+func (c *RepositoryFacade) GenerateBusinessResume(url, token string) (aiResponse string, err error) {
 	extensions := []string{
 		".java",
 		".kt",
@@ -87,7 +89,8 @@ func (c *RepositoryFacade) GenerateBusinessResume(url string) (aiResponse string
 		".md",
 	}
 
-	dirs := []string{
+	// Focused dirs for business-logic detection (first pass)
+	focusedDirs := []string{
 		"rest",
 		"api",
 		"controller",
@@ -105,21 +108,40 @@ func (c *RepositoryFacade) GenerateBusinessResume(url string) (aiResponse string
 		"integration",
 		"repository",
 		"event",
+		"main",
 	}
+
+	// Broader fallback dirs that cover flat / non-standard layouts
+	broadDirs := []string{
+		"src", "lib", "pkg", "app", "core", "internal", "cmd",
+		"main", "server", "backend", "frontend", "common",
+		"utils", "helpers", "middleware", "routes", "handlers",
+		"modules", "components", "features", "pages",
+		"rest", "api", "controller", "handler",
+		"service", "usecase", "application", "domain",
+		"model", "entity", "aggregate", "facade",
+		"client", "gateway", "integration", "repository", "event",
+	}
+
+	url = c.normalizeUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return "", err
 	}
 
-	data, err := c.createAndCrawl(url, extensions, dirs)
+	data, err := c.createAndCrawl(url, extensions, focusedDirs, token)
 	if err != nil {
 		return "", err
 	}
-	if data == nil {
-		return "", errors.New("repository business data is empty")
+	if data == nil || len(data.Files) == 0 {
+		// First pass found nothing – retry with the broader directory list
+		data, err = c.createAndCrawl(url, extensions, broadDirs, token)
+		if err != nil {
+			return "", err
+		}
 	}
-	if len(data.Files) < 5 {
-		return "", errors.New("repository business context is too small")
+	if data == nil || len(data.Files) == 0 {
+		return "", errors.New("no source files found in repository (check that the URL is correct and the repo is public)")
 	}
 	aiResponse, err = c.resumeGeneratorService.GenerateBusinessResume(data.String())
 	if err != nil {
@@ -128,8 +150,8 @@ func (c *RepositoryFacade) GenerateBusinessResume(url string) (aiResponse string
 	return aiResponse, nil
 }
 
-func (c *RepositoryFacade) createAndCrawl(url string, extensions []string, dirs []string) (data *entity.RepositoryData, err error) {
-	path, err := c.cloneService.CloneRepository(url)
+func (c *RepositoryFacade) createAndCrawl(url string, extensions []string, dirs []string, token string) (data *entity.RepositoryData, err error) {
+	path, err := c.cloneService.CloneRepository(url, token)
 	if path != "" {
 		defer os.RemoveAll(path)
 	}
@@ -155,9 +177,20 @@ func (c *RepositoryFacade) converterStrategy(option enum.ConversionOption) (conv
 	}
 }
 
+// normalizeUrl appends ".git" to GitHub/GitLab URLs that are missing it,
+// so users can paste plain browser URLs without getting a validation error.
+func (c *RepositoryFacade) normalizeUrl(url string) string {
+	url = strings.TrimRight(url, "/")
+	if (strings.Contains(url, "github.com") || strings.Contains(url, "gitlab.com")) &&
+		!strings.HasSuffix(url, ".git") {
+		return url + ".git"
+	}
+	return url
+}
+
 func (c *RepositoryFacade) isUrlValid(url string) error {
 	if !strings.Contains(url, ".git") {
-		return errors.New("repository url must contain .git")
+		return errors.New("repository url must contain .git – pass a valid GitHub/GitLab clone URL")
 	}
 	return nil
 }

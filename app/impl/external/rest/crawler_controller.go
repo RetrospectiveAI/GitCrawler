@@ -26,7 +26,7 @@ func (c *CrawlerController) GetRepositoryFiles(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Url must contain something", http.StatusBadRequest)
 		return
 	}
-	data, err := c.repositoryFacade.GetRepositoryFiles(req.Url, req.Extensions, req.Dirs)
+	data, err := c.repositoryFacade.GetRepositoryFiles(req.Url, req.Extensions, req.Dirs, req.Token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,8 +70,10 @@ func (c *CrawlerController) GetBusinessRepoResume(w http.ResponseWriter, r *http
 		http.Error(w, "Url must contain something", http.StatusBadRequest)
 		return
 	}
+	// Optional PAT for private repositories; empty string for public repos.
+	token := r.URL.Query().Get("token")
 
-	aiResponse, err := c.repositoryFacade.GenerateBusinessResume(url)
+	aiResponse, err := c.repositoryFacade.GenerateBusinessResume(url, token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
