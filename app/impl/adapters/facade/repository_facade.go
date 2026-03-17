@@ -26,7 +26,7 @@ func NewRepositoryFacade(cloneService contract2.CloneServiceContract, crawlerSer
 }
 
 func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, dirs []string, token string) (data *entity.RepositoryData, err error) {
-	url = c.normalizeUrl(url)
+	url = c.normalizeGitUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (c *RepositoryFacade) GetRepositoryFiles(url string, extensions []string, d
 }
 
 func (c *RepositoryFacade) SaveRepositoryFiles(url string, extensions []string, dirs []string, option enum.ConversionOption) (err error) {
-	url = c.normalizeUrl(url)
+	url = c.normalizeGitUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return err
@@ -89,7 +89,6 @@ func (c *RepositoryFacade) GenerateBusinessResume(url, token string) (aiResponse
 		".md",
 	}
 
-	// Focused dirs for business-logic detection (first pass)
 	focusedDirs := []string{
 		"rest",
 		"api",
@@ -111,8 +110,7 @@ func (c *RepositoryFacade) GenerateBusinessResume(url, token string) (aiResponse
 		"main",
 	}
 
-	// Broader fallback dirs that cover flat / non-standard layouts
-	broadDirs := []string{
+	fallbackDirs := []string{
 		"src", "lib", "pkg", "app", "core", "internal", "cmd",
 		"main", "server", "backend", "frontend", "common",
 		"utils", "helpers", "middleware", "routes", "handlers",
@@ -123,7 +121,7 @@ func (c *RepositoryFacade) GenerateBusinessResume(url, token string) (aiResponse
 		"client", "gateway", "integration", "repository", "event",
 	}
 
-	url = c.normalizeUrl(url)
+	url = c.normalizeGitUrl(url)
 	err = c.isUrlValid(url)
 	if err != nil {
 		return "", err
@@ -134,8 +132,7 @@ func (c *RepositoryFacade) GenerateBusinessResume(url, token string) (aiResponse
 		return "", err
 	}
 	if data == nil || len(data.Files) == 0 {
-		// First pass found nothing – retry with the broader directory list
-		data, err = c.createAndCrawl(url, extensions, broadDirs, token)
+		data, err = c.createAndCrawl(url, extensions, fallbackDirs, token)
 		if err != nil {
 			return "", err
 		}
@@ -177,9 +174,7 @@ func (c *RepositoryFacade) converterStrategy(option enum.ConversionOption) (conv
 	}
 }
 
-// normalizeUrl appends ".git" to GitHub/GitLab URLs that are missing it,
-// so users can paste plain browser URLs without getting a validation error.
-func (c *RepositoryFacade) normalizeUrl(url string) string {
+func (c *RepositoryFacade) normalizeGitUrl(url string) string {
 	url = strings.TrimRight(url, "/")
 	if (strings.Contains(url, "github.com") || strings.Contains(url, "gitlab.com")) &&
 		!strings.HasSuffix(url, ".git") {
@@ -188,6 +183,7 @@ func (c *RepositoryFacade) normalizeUrl(url string) string {
 	return url
 }
 
+// We may remove this
 func (c *RepositoryFacade) isUrlValid(url string) error {
 	if !strings.Contains(url, ".git") {
 		return errors.New("repository url must contain .git – pass a valid GitHub/GitLab clone URL")
