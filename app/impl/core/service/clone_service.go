@@ -16,10 +16,6 @@ func NewCloneService() *CloneService {
 	return &CloneService{}
 }
 
-// CloneRepository clones repositoryUrl into a fresh temp directory.
-// When token is non-empty it is injected as the password in the HTTPS URL so
-// that private GitHub / GitLab repositories can be cloned without interactive
-// credentials.  The token is never written to logs.
 func (c *CloneService) CloneRepository(repositoryUrl, token string) (string, error) {
 	path, err := c.createRepositoryDirectory()
 	if err != nil {
@@ -28,7 +24,7 @@ func (c *CloneService) CloneRepository(repositoryUrl, token string) (string, err
 
 	cloneUrl := repositoryUrl
 	if token != "" {
-		cloneUrl = c.injectToken(repositoryUrl, token)
+		cloneUrl = c.injectGitToken(repositoryUrl, token)
 	}
 
 	cmd := exec.Command("git", "clone", cloneUrl, ".")
@@ -40,13 +36,7 @@ func (c *CloneService) CloneRepository(repositoryUrl, token string) (string, err
 	return path, nil
 }
 
-// injectToken rewrites an HTTPS GitHub/GitLab URL to embed the PAT so git
-// can authenticate without a credential helper.
-// Input:  https://github.com/owner/repo.git
-// Output: https://x-access-token:<TOKEN>@github.com/owner/repo.git
-// The raw token is never surfaced in error messages or log output.
-func (c *CloneService) injectToken(rawUrl, token string) string {
-	// Only rewrite HTTPS URLs
+func (c *CloneService) injectGitToken(rawUrl, token string) string {
 	if !strings.HasPrefix(rawUrl, "https://") {
 		return rawUrl
 	}

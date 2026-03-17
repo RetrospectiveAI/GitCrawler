@@ -42,7 +42,7 @@ func (c *CrawlerController) GetRepositoryFiles(w http.ResponseWriter, r *http.Re
 }
 
 func (c *CrawlerController) SaveRepositoryFile(w http.ResponseWriter, r *http.Request) {
-	var req request.RepositoryFilesRequest
+	var req request.SaveRepositoryFilesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -70,7 +70,7 @@ func (c *CrawlerController) GetBusinessRepoResume(w http.ResponseWriter, r *http
 		http.Error(w, "Url must contain something", http.StatusBadRequest)
 		return
 	}
-	// Optional PAT for private repositories; empty string for public repos.
+
 	token := r.URL.Query().Get("token")
 
 	aiResponse, err := c.repositoryFacade.GenerateBusinessResume(url, token)
