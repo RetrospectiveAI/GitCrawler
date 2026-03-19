@@ -17,22 +17,22 @@ func NewCloneService() *CloneService {
 }
 
 func (c *CloneService) CloneRepository(repositoryUrl, token string) (string, error) {
-	c.normalizeGitUrl(repositoryUrl)
 	path, err := c.createRepositoryDirectory()
 	if err != nil {
 		return path, err
 	}
 
+	repositoryUrl = c.validateGitUrl(repositoryUrl)
 	cloneUrl := repositoryUrl
 	if token != "" {
 		cloneUrl = c.injectGitToken(repositoryUrl, token)
 	}
 
-	cmd := exec.Command("git", "clone", cloneUrl, ".")
+	cmd := exec.Command("git", "clone", "--depth", "1", cloneUrl, ".")
 	cmd.Dir = path
 	err = cmd.Run()
 	if err != nil {
-		return path, errors.New(fmt.Sprintf("Repository not found, project may be private: %s", err.Error()))
+		return path, errors.New(fmt.Sprintf("Failed in cloning repository %s", err.Error()))
 	}
 	return path, nil
 }
@@ -57,10 +57,10 @@ func (c *CloneService) createRepositoryDirectory() (string, error) {
 	path, err = os.MkdirTemp(path, "temp")
 	return path, nil
 }
-func (c *CloneService) normalizeGitUrl(url string) string {
+
+func (c *CloneService) validateGitUrl(url string) string {
 	url = strings.TrimRight(url, "/")
-	if (strings.Contains(url, "github.com") || strings.Contains(url, "gitlab.com")) &&
-		!strings.HasSuffix(url, ".git") {
+	if !strings.HasSuffix(url, ".git") {
 		return url + ".git"
 	}
 	return url
