@@ -1,4 +1,4 @@
-package entity
+package model
 
 import (
 	"fmt"
@@ -19,12 +19,13 @@ const MaxResumeBytes = 80_000
 // String produces a structured, LLM-readable representation of the repository.
 //
 // Format:
-//   === REPOSITORY: <name> ===
-//   FILE TREE:
-//     src/main/Foo.java
-//     ...
-//   === FILE: src/main/Foo.java ===
-//   <content>
+//
+//	=== REPOSITORY: <name> ===
+//	FILE TREE:
+//	  src/main/Foo.java
+//	  ...
+//	=== FILE: src/main/Foo.java ===
+//	<content>
 //
 // The full file tree is always included so the LLM knows every path that
 // exists.  File contents are included in order until MaxResumeBytes is

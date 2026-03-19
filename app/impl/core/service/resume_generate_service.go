@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions"
-
 type ResumeGenerateService struct {
 	llmIntegration contract.LlmIntegrationContract
 }

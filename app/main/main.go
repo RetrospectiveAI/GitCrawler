@@ -21,12 +21,17 @@ func main() {
 	}
 
 	llm := integration.NewLlmIntegration(os.Getenv("API_KEY"))
+	fileWriter := integration.NewFileWriter()
+
 	resumeService := service.NewResumeGenerateService(llm)
 	cloneService := service.NewCloneService()
 	crawlerService := service.NewCrawlerService()
 
-	repoFacade := facade.NewRepositoryFacade(cloneService, crawlerService, resumeService)
-	crawlerController := rest.NewCrawlerController(repoFacade)
+	repositoryLoader := service.NewRepositoryLoaderService(crawlerService, cloneService)
+
+	resumeFacade := facade.NewAIResumeGenerateFacade(repositoryLoader, resumeService)
+	repoFacade := facade.NewRepositoryFacade(repositoryLoader, fileWriter)
+	crawlerController := rest.NewCrawlerController(repoFacade, resumeFacade)
 
 	server := http.Server{}
 	register.GetHandlers(crawlerController)
