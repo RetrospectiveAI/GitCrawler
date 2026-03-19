@@ -10,10 +10,12 @@ import (
 
 type CrawlerController struct {
 	repositoryFacade *facade.RepositoryFacade
+	resumeFacade     *facade.AIResumeGenerateFacade
 }
 
-func NewCrawlerController(repositoryFacade *facade.RepositoryFacade) *CrawlerController {
-	return &CrawlerController{repositoryFacade: repositoryFacade}
+func NewCrawlerController(repositoryFacade *facade.RepositoryFacade, resumeFacade *facade.AIResumeGenerateFacade) *CrawlerController {
+	return &CrawlerController{repositoryFacade: repositoryFacade,
+		resumeFacade: resumeFacade}
 }
 
 func (c *CrawlerController) GetRepositoryFiles(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +53,7 @@ func (c *CrawlerController) SaveRepositoryFile(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Url must contain something", http.StatusBadRequest)
 		return
 	}
-	err := c.repositoryFacade.SaveRepositoryFiles(req.Url, req.Extensions, req.Dirs, req.Option)
+	err := c.repositoryFacade.SaveRepositoryFiles(req.Url, req.Extensions, req.Dirs, req.Option, req.Token)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -59,7 +61,7 @@ func (c *CrawlerController) SaveRepositoryFile(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("The csv is ready"))
+	w.Write([]byte("The " + req.Option + " is ready"))
 
 }
 
@@ -73,7 +75,7 @@ func (c *CrawlerController) GetBusinessRepoResume(w http.ResponseWriter, r *http
 
 	token := r.URL.Query().Get("token")
 
-	aiResponse, err := c.repositoryFacade.GenerateBusinessResume(url, token)
+	aiResponse, err := c.resumeFacade.GenerateBusinessResume(url, token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

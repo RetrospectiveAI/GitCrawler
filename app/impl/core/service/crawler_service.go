@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	entity2 "gitcrawler/app/impl/core/entity"
+	"gitcrawler/app/impl/core/model"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,8 +18,8 @@ func NewCrawlerService() *CrawlerService {
 	return &CrawlerService{}
 }
 
-func (c *CrawlerService) CrawlRepository(path string, repoName string, validExtensions []string, validDirs []string) (data *entity2.RepositoryData, err error) {
-	data = &entity2.RepositoryData{}
+func (c *CrawlerService) CrawlRepository(path string, repoName string, validExtensions []string, validDirs []string) (data *model.RepositoryData, err error) {
+	data = &model.RepositoryData{}
 	data.Name = repoName
 	if validExtensions == nil {
 		return nil, errors.New("no valid extensions provided")
@@ -36,7 +36,7 @@ func (c *CrawlerService) CrawlRepository(path string, repoName string, validExte
 	}
 	return data, nil
 }
-func (c *CrawlerService) crawl(dir string, repositoryData *entity2.RepositoryData, validDir bool) (err error) {
+func (c *CrawlerService) crawl(dir string, repositoryData *model.RepositoryData, validDir bool) (err error) {
 	readDir, err := os.ReadDir(dir)
 
 	if err != nil {
@@ -79,8 +79,8 @@ func (c *CrawlerService) openFile(path string) (data string, err error) {
 	return data, nil
 }
 
-func (c *CrawlerService) appendFileData(repositoryData *entity2.RepositoryData, path string, data string) {
-	repositoryFile := &entity2.RepositoryFile{}
+func (c *CrawlerService) appendFileData(repositoryData *model.RepositoryData, path string, data string) {
+	repositoryFile := &model.RepositoryFile{}
 	repositoryFile.Data = data
 	repositoryFile.Path = path
 	repositoryData.Files = append(repositoryData.Files, repositoryFile)

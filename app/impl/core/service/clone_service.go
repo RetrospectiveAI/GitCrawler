@@ -17,6 +17,7 @@ func NewCloneService() *CloneService {
 }
 
 func (c *CloneService) CloneRepository(repositoryUrl, token string) (string, error) {
+	c.normalizeGitUrl(repositoryUrl)
 	path, err := c.createRepositoryDirectory()
 	if err != nil {
 		return path, err
@@ -55,4 +56,12 @@ func (c *CloneService) createRepositoryDirectory() (string, error) {
 	}
 	path, err = os.MkdirTemp(path, "temp")
 	return path, nil
+}
+func (c *CloneService) normalizeGitUrl(url string) string {
+	url = strings.TrimRight(url, "/")
+	if (strings.Contains(url, "github.com") || strings.Contains(url, "gitlab.com")) &&
+		!strings.HasSuffix(url, ".git") {
+		return url + ".git"
+	}
+	return url
 }

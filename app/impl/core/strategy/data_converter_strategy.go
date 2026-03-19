@@ -1,9 +1,9 @@
 package strategy
 
 import (
-	"gitcrawler/app/impl/core/entity"
+	"gitcrawler/app/impl/core/model"
 )
 
 type DataConverter interface {
-	Convert(data *entity.RepositoryData) (err error)
+	Convert(data *model.RepositoryData) (value []byte, err error)
 }

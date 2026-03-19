@@ -1,9 +1,9 @@
 package strategy
 
 import (
+	"bytes"
 	"encoding/csv"
-	"gitcrawler/app/impl/core/entity"
-	"os"
+	"gitcrawler/app/impl/core/model"
 	"strings"
 )
 
@@ -13,11 +13,10 @@ func NewConverterCsv() *ConverterCsv {
 	return &ConverterCsv{}
 }
 
-func (c *ConverterCsv) Convert(data *entity.RepositoryData) (err error) {
+func (c *ConverterCsv) Convert(data *model.RepositoryData) (value []byte, err error) {
 
-	w, _ := c.createPath()
-	writer := csv.NewWriter(w)
-	defer writer.Flush()
+	buffer := new(bytes.Buffer)
+	writer := csv.NewWriter(buffer)
 
 	headers := []string{"Name", "Data", "Path"}
 
@@ -32,24 +31,9 @@ func (c *ConverterCsv) Convert(data *entity.RepositoryData) (err error) {
 		}
 		err = writer.Write(record)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-
-	return nil
-}
-func (c *ConverterCsv) createPath() (w *os.File, err error) {
-	homeDir, _ := os.UserHomeDir()
-
-	dirPath := homeDir + "/Downloads"
-
-	os.MkdirAll(dirPath, os.ModePerm)
-
-	filePath := dirPath + "/output.csv"
-
-	w, err = os.Create(filePath)
-	if err != nil {
-		return w, err
-	}
-	return w, nil
+	writer.Flush()
+	return buffer.Bytes(), nil
 }
