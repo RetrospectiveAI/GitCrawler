@@ -14,9 +14,9 @@ jobs:
         working-directory: /Users/mugen/server/retrospectiveAI-server/services/backend/GitCrawler
         run: git pull origin ${{ github.ref_name }}
 
-      - name: Restart all services
+      - name: Rebuild and restart gitcrawler
         working-directory: /Users/mugen/server/retrospectiveAI-server
-        run: ./restart.sh --all
+        run: docker compose up -d --build gitcrawler
 
       - name: Health check
         run: |
@@ -26,17 +26,11 @@ jobs:
               echo "GitCrawler OK (HTTP $STATUS)"
               exit 0
             fi
-            echo "  tentativa $i/15..."
+            echo "  attempt $i/15..."
             sleep 5
           done
-          echo "GitCrawler não respondeu"
           docker compose -f /Users/mugen/server/retrospectiveAI-server/docker-compose.yml ps gitcrawler
           exit 1
 
       - name: Show tunnel URL
-        run: |
-          TUNNEL_URL=$(cat /Users/mugen/server/retrospectiveAI-server/.tunnel-url 2>/dev/null || echo "túnel não ativo")
-          echo ""
-          echo "=================================="
-          echo "  URL EXTERNA: $TUNNEL_URL"
-          echo "=================================="
+        run: cat /Users/mugen/server/retrospectiveAI-server/.tunnel-url 2>/dev/null || echo "tunnel not active"
