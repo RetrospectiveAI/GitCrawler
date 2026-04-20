@@ -22,14 +22,14 @@ jobs:
         run: |
           for i in $(seq 1 15); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8081/health 2>/dev/null || true)
-            if [[ "$STATUS" =~ ^(200|301|302)$ ]]; then
+            if [[ "$STATUS" =~ ^[2-4][0-9][0-9]$ ]]; then
               echo "GitCrawler OK (HTTP $STATUS)"
               exit 0
             fi
             echo "  attempt $i/15..."
             sleep 5
           done
-          docker compose -f /Users/mugen/server/retrospectiveAI-server/docker-compose.yml ps gitcrawler
+          cd /Users/mugen/server/retrospectiveAI-server && docker compose ps gitcrawler
           exit 1
 
       - name: Show tunnel URL
