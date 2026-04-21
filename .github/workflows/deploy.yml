@@ -12,7 +12,9 @@ jobs:
     steps:
       - name: Pull latest code
         working-directory: /Users/mugen/server/retrospectiveAI-server/services/backend/GitCrawler
-        run: git pull origin ${{ github.ref_name }}
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/RetrospectiveAI/GitCrawler.git
+          git pull origin ${{ github.ref_name }}
 
       - name: Rebuild and restart gitcrawler
         working-directory: /Users/mugen/server/retrospectiveAI-server
