@@ -1,71 +1,93 @@
-## GitCrawler
+# GitCrawler
 
-Rest API that trims repositories from GitHub and return only the necessary data or resumes of the repositories for data ingestion
+Go REST API that clones GitHub repositories and extracts file data for ingestion by the RetrospectiveAI service.
 
-## How It Works
+## How it works
 
-When a request is received, the API first clones the target GitHub repository locally.  
-For file extraction requests, it scans the cloned repository and selects files based on the requested extensions and directories.
-With the
-For business model summary requests, the API extracts relevant information from the repository, such as the README, documentation, or main code files, and sends it to the AI service. The generated summary is then returned directly to the user.
+When a request arrives, the API clones the target repository locally, scans it for files matching the requested extensions and directories, and returns the results. For business model summary requests, it extracts relevant files and sends them to the LLM, returning the generated summary.
 
-## Diagram
-
-<Project C4 or sequencial diagram>
-  
 ## Tech Stack
 
-Golang
+- **Go 1.22**
+- Standard library `net/http`
+- Static binary built on Alpine Linux
 
-## Use Cases
-### 1. Get Files in GitHub Repos
-- **Input:** GitHub URLs + file extensions/directories  
-- **Output:** List of matching files (path, repo, type)  
+## Running locally
 
-### 2. Save Files of GitHub Repos
-- **Input:** GitHub URLs + file extensions/packages + option to save (json, csv, etc)
-- **Output:** Saves in the downloads directory of your machine and archive with all the matching files, in the format you asked
-
-### 3. Generate Business Model Summary via AI
-- **Input:** GitHub URL + API_KEY  
-- **Output:** Business model summary
-
-## Set-up
+Requirements: Go 1.22+, `git` installed.
 
 ```bash
-git clone https://github.com/Gabriel-Gerhardt/GitCrawler.git
-cd GitCrawler
-docker compose up
+cd app
+go mod download
+go build -o gitcrawler ./main/
+./gitcrawler
 ```
 
-Access:
+Server starts on **port 8080**.
 
-    localhost:8080/getRepoData:
-    example: curl -X POST http://localhost:8080/getRepoData \
-    -H "Content-Type: application/json" \
-    -d '{
-    "url": "https://github.com/Gabriel-Gerhardt/GitCrawler.git",
-    "dirs": ["pkg", "service"],
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `API_KEY` | LLM API key (used for business model summaries) |
+| `AI_RESUME_PROMPT` | Custom prompt for repository summaries (optional) |
+
+## API Endpoints
+
+### `POST /getRepoData`
+Clones a repository and returns a list of matching files.
+
+```bash
+curl -X POST http://localhost:8080/getRepoData \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://github.com/org/repo.git",
+    "dirs": ["src", "pkg"],
     "extensions": [".go", ".md"]
-    }'
+  }'
+```
 
-    localhost:8080/saveRepoData:
-    example: curl -X POST http://localhost:8080/saveRepoData \
-    -H "Content-Type: application/json" \
-    -d '{
-    "url": "https://github.com/Gabriel-Gerhardt/GitCrawler.git",
-    "dirs": ["pkg", "service"],
-    "extensions": [".go", ".md"],
-    "option": "csv"
-    }'
+### `POST /saveRepoData`
+Clones a repository and exports matching files to disk.
 
-    get -> localhost:8080/getBusinessRepoResume/{repositoryUrl}
-    example: curl "localhost:8080/getBusinessRepoResume?url=https://github.com/Gabriel-Gerhardt/GitCrawler.git"
+```bash
+curl -X POST http://localhost:8080/saveRepoData \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://github.com/org/repo.git",
+    "dirs": ["src"],
+    "extensions": [".go"],
+    "option": "json"
+  }'
+```
 
-## Contact
-[LinkedIn](https://www.linkedin.com/in/gabriel-gerhardt-0a8b852b9/)
+### `GET /getBusinessRepoResume?url=<repo-url>`
+Returns an AI-generated summary of the repository's purpose and tech stack.
 
-[Gmail](mailto:gabrielgerhardt27@gmail.com)
+```bash
+curl "http://localhost:8080/getBusinessRepoResume?url=https://github.com/org/repo.git"
+```
 
-[GitHub](https://github.com/Gabriel-Gerhardt)
+## Running with Docker
 
+```bash
+# From the root retrospective/ directory
+docker compose up gitcrawler
+```
+
+## Project structure
+
+```
+app/
+├── main/
+│   └── main.go                  # Entry point and dependency injection
+└── impl/
+    ├── adapters/
+    │   ├── facade/              # RepositoryFacade, AIResumeGenerateFacade
+    │   └── register/            # HTTP route registration
+    ├── core/
+    │   └── service/             # CloneService, CrawlerService, etc.
+    └── external/
+        ├── integration/         # LLM integration
+        └── rest/                # HTTP controller
+```
