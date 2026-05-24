@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Pull latest code
-        working-directory: /Users/mugen/server/retrospectiveAI-server/services/backend/GitCrawler
+        working-directory: /Users/mugen/server/retrospectiveAI-server/GitCrawler
         run: git pull origin ${{ github.ref_name }}
 
       - name: Rebuild and restart gitcrawler
@@ -21,7 +21,7 @@ jobs:
       - name: Health check
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8081/health 2>/dev/null || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8080/getAll 2>/dev/null || true)
             if [[ "$STATUS" =~ ^[2-4][0-9][0-9]$ ]]; then
               echo "GitCrawler OK (HTTP $STATUS)"
               exit 0
@@ -29,7 +29,7 @@ jobs:
             echo "  attempt $i/15..."
             sleep 5
           done
-          cd /Users/mugen/server/retrospectiveAI-server && docker compose ps gitcrawler
+          docker compose -f /Users/mugen/server/retrospectiveAI-server/docker-compose.yml ps gitcrawler
           exit 1
 
       - name: Show tunnel URL
