@@ -5,8 +5,11 @@ import (
 	"net/http"
 )
 
-func GetHandlers(crawlerController *rest.CrawlerController) {
-	http.Handle("/getRepoData", http.HandlerFunc(crawlerController.GetRepositoryFiles))
-	http.Handle("/saveRepoData", http.HandlerFunc(crawlerController.SaveRepositoryFile))
-	http.Handle("/getBusinessRepoResume", http.HandlerFunc(crawlerController.GetBusinessRepoResume))
+func GetHandlers(crawlerController *rest.CrawlerController, internalApiKey string) {
+	auth := func(h http.HandlerFunc) http.Handler {
+		return rest.RequireApiKey(internalApiKey, h)
+	}
+	http.Handle("/getRepoData", auth(crawlerController.GetRepositoryFiles))
+	http.Handle("/saveRepoData", auth(crawlerController.SaveRepositoryFile))
+	http.Handle("/getBusinessRepoResume", auth(crawlerController.GetBusinessRepoResume))
 }

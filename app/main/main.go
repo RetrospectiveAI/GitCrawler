@@ -34,7 +34,7 @@ func main() {
 	crawlerController := rest.NewCrawlerController(repoFacade, resumeFacade)
 
 	server := http.Server{}
-	register.GetHandlers(crawlerController)
+	register.GetHandlers(crawlerController, os.Getenv("INTERNAL_API_KEY"))
 
 	server.Addr = ":8080"
 	fmt.Println("Running server on " + server.Addr)
