@@ -73,7 +73,7 @@ func (c *CrawlerController) GetBusinessRepoResume(w http.ResponseWriter, r *http
 		return
 	}
 
-	token := r.URL.Query().Get("token")
+	token := r.Header.Get("X-Github-Token")
 
 	aiResponse, err := c.resumeFacade.GenerateBusinessResume(url, token)
 	if err != nil {
