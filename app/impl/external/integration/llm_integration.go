@@ -43,7 +43,7 @@ func (s *LlmIntegration) ReturnAIResponse(prompt string) (aiResponse string, err
 
 func (s *LlmIntegration) buildRequest(prompt string) (request *http.Request, err error) {
 	body := []byte(`{
-		"model": "openai/gpt-4o-mini",
+		"model": "openai/gpt-oss-120b",
 		"messages": [{"role": "user", "content": "` + prompt + `"}]
 	}`)
 
