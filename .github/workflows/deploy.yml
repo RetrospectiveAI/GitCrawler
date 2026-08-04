@@ -14,7 +14,9 @@ jobs:
         working-directory: /Users/mugen/server/retrospectiveAI-server/GitCrawler
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/RetrospectiveAI/GitCrawler.git
-          git pull origin ${{ github.ref_name }}
+          git fetch origin ${{ github.ref_name }}
+          git reset --hard origin/${{ github.ref_name }}
+          git clean -fd
 
       - name: Rebuild and restart gitcrawler
         working-directory: /Users/mugen/server/retrospectiveAI-server
