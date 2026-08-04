@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 
 	server := http.Server{}
 	register.GetHandlers(crawlerController, os.Getenv("INTERNAL_API_KEY"))
+	http.Handle("/metrics", promhttp.Handler())
 
 	server.Addr = ":8080"
 	fmt.Println("Running server on " + server.Addr)
